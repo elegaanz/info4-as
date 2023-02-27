@@ -58,7 +58,7 @@ PUBLIC const sighandler_t sigdfl[NR_SIGNALS] = {
 	(sighandler_t)&_abort,     /* SIGABRT */
 	(sighandler_t)&_abort,     /* SIGBUS  */
 	SIG_IGN,                   /* SIGCHLD */
-	NULL,                      /* SIGCONT */
+	SIG_IGN,                   /* SIGCONT */
 	(sighandler_t)&_terminate, /* SIGFPE  */
 	(sighandler_t)&_terminate, /* SIGHUP  */
 	(sighandler_t)&_abort,     /* SIGILL  */

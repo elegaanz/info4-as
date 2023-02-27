@@ -59,10 +59,7 @@ PUBLIC void resume(struct process *proc)
 		sched(proc);
 }
 
-/**
- * @brief Yields the processor.
- */
-PUBLIC void yield(void)
+PUBLIC void yield_round_robin(void)
 {
 	struct process *p;    /* Working process.     */
 	struct process *next; /* Next process to run. */
@@ -118,4 +115,128 @@ PUBLIC void yield(void)
 	next->counter = PROC_QUANTUM;
 	if (curr_proc != next)
 		switch_to(next);
+}
+
+
+PUBLIC void yield_priority(void)
+{
+	struct process *p;    /* Working process.     */
+	struct process *next; /* Next process to run. */
+
+	/* Re-schedule process for execution. */
+	if (curr_proc->state == PROC_RUNNING)
+		sched(curr_proc);
+
+	/* Remember this process. */
+	last_proc = curr_proc;
+
+	/* Check alarm. */
+	for (p = FIRST_PROC; p <= LAST_PROC; p++)
+	{
+		/* Skip invalid processes. */
+		if (!IS_VALID(p))
+			continue;
+		
+		/* Alarm has expired. */
+		if ((p->alarm) && (p->alarm < ticks))
+			p->alarm = 0, sndsig(p, SIGALRM);
+	}
+
+	/* Choose a process to run next. */
+	next = IDLE;
+	// next->counter = 0;
+	for (p = FIRST_PROC; p <= LAST_PROC; p++)
+	{
+		/* Skip non-ready process. */
+		if (p->state != PROC_READY)
+			continue;
+
+		int next_prio = (next->priority + 100) + (next->nice + 40) - (next->counter);
+		int p_prio = (p->priority + 100) + (p->nice + 40) - (p->counter);
+		if (p_prio < next_prio) {
+			if (next != IDLE) next->counter++;
+			next = p;
+		} else if (p_prio == next_prio) {
+			if (p->counter > next->counter) {
+				if (next != IDLE) next->counter++;
+				next = p;
+			} else {
+				if (p != IDLE) p->counter++;
+			}
+		} else {
+			if (p != IDLE) p->counter++;
+		}
+	}
+
+	/* Switch to next process. */
+	next->priority = PRIO_USER;
+	next->state = PROC_RUNNING;
+	next->counter = PROC_QUANTUM;
+	if (curr_proc != next)
+		switch_to(next);
+}
+
+#define MIN_TICKETS 30
+PUBLIC void yield_lotery(void)
+{
+	struct process *p;    /* Working process.     */
+	struct process *next; /* Next process to run. */
+
+	/* Re-schedule process for execution. */
+	if (curr_proc->state == PROC_RUNNING)
+		sched(curr_proc);
+
+	/* Remember this process. */
+	last_proc = curr_proc;
+
+	/* Check alarm. */
+	int total_tickets = 0;
+	for (p = FIRST_PROC; p <= LAST_PROC; p++)
+	{
+		/* Skip invalid processes. */
+		if (!IS_VALID(p))
+			continue;
+
+		/* Alarm has expired. */
+		if ((p->alarm) && (p->alarm < ticks))
+			p->alarm = 0, sndsig(p, SIGALRM);
+		
+		total_tickets -= p->priority + p->nice - 80 - MIN_TICKETS;
+	}
+
+	/* Choose a process to run next. */
+	next = IDLE;
+	int position = 0;
+	int winning_pos = ticks % total_tickets;
+	for (p = FIRST_PROC; p <= LAST_PROC; p++)
+	{
+		/* Skip non-ready process. */
+		if (p->state != PROC_READY)
+			continue;
+
+		int new_position = position - p->priority - p->nice + 80 + MIN_TICKETS;
+		
+		if (position < winning_pos && winning_pos < new_position) {
+			if (next != IDLE) next->counter++;
+			next = p;
+		} else {
+			if (p != IDLE) p->counter++;
+		}
+		position = new_position;
+	}
+
+	/* Switch to next process. */
+	next->priority = PRIO_USER;
+	next->state = PROC_RUNNING;
+	next->counter = PROC_QUANTUM;
+	if (curr_proc != next)
+		switch_to(next);
+}
+#define yield_ yield_lotery
+
+/**
+ * @brief Yields the processor.
+ */
+PUBLIC void yield(void) {
+	yield_();
 }

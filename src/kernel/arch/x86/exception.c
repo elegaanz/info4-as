@@ -81,8 +81,17 @@ PUBLIC void do_nmi(void)
 /*
  * Handles a debug exception.
  */
-PUBLIC void do_debug(void)
+PUBLIC void do_debug(struct intstack *regs)
 {
+	int dr6;
+	__asm("movl %%dr6, %0" : "=r"(dr6));
+	dumpregs(regs);
+	kprintf("DR6 = %x\n", dr6);
+	kprintf("EIP = %x\n", regs->eip);
+	/*char *ip = (char *)(regs->eip);
+	for (int i = 0; i < 10; i++) {
+		kprintf("%x ", ip[i]);
+	}*/
 	kprintf("debug exception received but not implemented");
 }
 

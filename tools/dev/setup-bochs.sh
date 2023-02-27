@@ -57,7 +57,7 @@ wget --no-check-certificate "http://sourceforge.net/projects/bochs/files/bochs/2
 tar -xvf bochs-2.6.9.tar.gz
 cd bochs-2.6.9/
 patch < $CURDIR/tools/dev/gdbstub.patch
-./configure --with-term --enable-gdb-stub --enable-all-optimizations
+./configure --with-sdl2 --with-term --enable-gdb-stub --enable-all-optimizations
 sed -i '/^\<LIBS\>/ s/$/ -lpthread/' Makefile
 make all
 make install

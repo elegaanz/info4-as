@@ -101,5 +101,6 @@ PUBLIC void wakeup(struct process **chain)
 	{
 		sched(*chain);
 		*chain = (*chain)->next;
+		// kprintf("next %d", (int) *chain);
 	}
 }
